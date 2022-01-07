@@ -5,9 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 )
@@ -23,8 +22,8 @@ type Config struct {
 	ZipPath   string `json:"zipPath"`
 }
 
-// conn is the single PostgreSQL connection we will utilize.
-var conn *pgx.Conn
+// pool is the PostgreSQL connection pool we will utilize.
+var pool *pgxpool.Pool
 
 // ctx is context.Background under a new and improved name.
 var ctx = context.Background()
@@ -52,7 +51,9 @@ func main() {
 	}
 
 	// Ensure valid criteria.
-	switch os.Args[1] {
+	action := os.Args[1]
+	switch action {
+	case "all":
 	case "sd":
 	case "nand":
 	case "forwarder":
@@ -69,17 +70,17 @@ func main() {
 	check(err)
 
 	dbString := fmt.Sprintf("postgres://%s:%s@%s/%s", config.User, config.Pass, config.Host, config.DB)
-	connConfig, err := pgx.ParseConfig(dbString)
+	connConfig, err := pgxpool.ParseConfig(dbString)
 	check(err)
-	conn, err = pgx.ConnectConfig(ctx, connConfig)
+	pool, err = pgxpool.ConnectConfig(ctx, connConfig)
 
 	// Ensure we can connect to PostgreSQL.
-	defer conn.Close(ctx)
+	defer pool.Close()
 
 	// Set up variables useful for scanning in to.
 	var appId int
-	var titleId string
 	var zipUuid string
+	var version int
 
 	// Query all titles, or a specific title.
 	if len(os.Args) == 3 {
@@ -88,31 +89,31 @@ func main() {
 		check(err)
 
 		// Obtain necessary metadata.
-		row := conn.QueryRow(ctx, `SELECT application.title_id, metadata.file_uuid
+		row := pool.QueryRow(ctx, `SELECT metadata.file_uuid, application.version
 		FROM
 			application, metadata
 		WHERE
 			application.id = $1 AND
 			application.id = metadata.application_id`, appId)
 
-		err = row.Scan(&titleId, &zipUuid)
+		err = row.Scan(&zipUuid, &version)
 		check(err)
 
-		handleTitle(appId, titleId, zipUuid)
+		handleTitle(action, appId, zipUuid, version)
 	} else {
 		// We want to generate this type for all applications.
-		rows, _ := conn.Query(ctx, `SELECT application.id, application.title_id, metadata.file_uuid
+		rows, _ := pool.Query(ctx, `SELECT application.id, metadata.file_uuid, application.version,
 		FROM
 			application, metadata
 		WHERE
 			application.id = metadata.application_id`)
 
 		if rows.Next() {
-			err = rows.Scan(&appId, &titleId, &zipUuid)
+			err = rows.Scan(&appId, &zipUuid, &version)
 			check(err)
 
 			// Handle for all titles!
-			handleTitle(appId, titleId, zipUuid)
+			handleTitle(action, appId, zipUuid, version)
 		}
 		// Ensure our query was successful.
 		check(rows.Err())
@@ -120,16 +121,20 @@ func main() {
 }
 
 // handleTitle determines an appropriate action to perform for the app ID.
-func handleTitle(appId int, titleId string, zipUuid string) {
-	action := os.Args[1]
-
-	log.Println("handling", action, appId, titleId, zipUuid)
+func handleTitle(action string, appId int, zipUuid string, version int) {
+	fmt.Printf("handling action %s for app ID %d at version %d\n", action, appId, version)
 
 	switch action {
+	case "all":
+		handleTitle("sd", appId, zipUuid, version)
+		handleTitle("nand", appId, zipUuid, version)
+		handleTitle("forwarder", appId, zipUuid, version)
 	case "sd":
+		generateSD(appId, zipUuid, version)
 	case "nand":
+		fmt.Println("not implemented")
 	case "forwarder":
-		break
+		fmt.Println("not implemented")
 	default:
 		fmt.Printf("Invalid generation type %s!\n", os.Args[1])
 		os.Exit(1)

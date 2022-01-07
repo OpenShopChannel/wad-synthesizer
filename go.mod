@@ -2,7 +2,10 @@ module github.com/OpenShopChannel/wad-synthesizer
 
 go 1.17
 
-require github.com/jackc/pgx/v4 v4.14.1
+require (
+	github.com/jackc/pgx/v4 v4.14.1
+	github.com/wii-tools/wadlib v0.3.0
+)
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
