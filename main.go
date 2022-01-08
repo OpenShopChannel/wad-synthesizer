@@ -80,7 +80,6 @@ func main() {
 	// Set up variables useful for scanning in to.
 	var appId int
 	var zipUuid string
-	var version int
 
 	// Query all titles, or a specific title.
 	if len(os.Args) == 3 {
@@ -89,28 +88,33 @@ func main() {
 		check(err)
 
 		// Obtain necessary metadata.
-		row := pool.QueryRow(ctx, `SELECT metadata.file_uuid, application.version
+		row := pool.QueryRow(ctx, `SELECT metadata.file_uuid
 		FROM
-			application, metadata
+			metadata
 		WHERE
-			application.id = $1 AND
-			application.id = metadata.application_id`, appId)
+			metadata.application_id = $1`, appId)
 
-		err = row.Scan(&zipUuid, &version)
+		err = row.Scan(&zipUuid)
 		check(err)
+
+		// Obtain the version for this title.
+		version := updateVersion(appId)
 
 		handleTitle(action, appId, zipUuid, version)
 	} else {
 		// We want to generate this type for all applications.
-		rows, _ := pool.Query(ctx, `SELECT application.id, metadata.file_uuid, application.version,
+		rows, _ := pool.Query(ctx, `SELECT application.id, metadata.file_uuid
 		FROM
 			application, metadata
 		WHERE
 			application.id = metadata.application_id`)
 
-		if rows.Next() {
-			err = rows.Scan(&appId, &zipUuid, &version)
+		for rows.Next() {
+			err = rows.Scan(&appId, &zipUuid)
 			check(err)
+
+			// Obtain the version for this title.
+			version := updateVersion(appId)
 
 			// Handle for all titles!
 			handleTitle(action, appId, zipUuid, version)
@@ -132,9 +136,11 @@ func handleTitle(action string, appId int, zipUuid string, version int) {
 	case "sd":
 		generateSD(appId, zipUuid, version)
 	case "nand":
-		fmt.Println("not implemented")
+		// not implemented
+		break
 	case "forwarder":
-		fmt.Println("not implemented")
+		// not implemented
+		break
 	default:
 		fmt.Printf("Invalid generation type %s!\n", os.Args[1])
 		os.Exit(1)

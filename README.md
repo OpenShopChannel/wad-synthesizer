@@ -28,3 +28,6 @@ You can additionally run operations in bulk, useful for when things have changed
  - `wad-synthesize all` generates all possible types for all possible app IDs.
 
 Currently, only SD generation is implemented. Others will exist in the future.
+
+During runtime, this tool will increment the `version` column within the `application` table.
+Previously issued tickets for a given type will retain previous versions until generated again. This is to avoid the user having to update for nothing.

@@ -7,15 +7,40 @@ import (
 	"github.com/wii-tools/wadlib"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 )
 
-// appIdChars determines the last 3 characters for the given title ID.
-// For example, assuming an application ID of 1, it returns 0x414141, or aAA.
-func appIdChars(appId int) uint64 {
-	// TODO(spotlightishere): Implement
-	return 0x414141
+// titleForType retrieves the title ID for the given type.
+// For example, assuming an action of "sd" and an app ID of "1", it queries title_ids for sd_title.
+func titleForType(action string, appId int) uint64 {
+	var column string
+	switch action {
+	case "sd":
+		column = "sd_title"
+	case "nand":
+		column = "nand_title"
+	case "forwarder":
+		column = "forwarder_title"
+	default:
+		log.Fatalf("invalid type %s while running for app ID %d\n", action, appId)
+	}
+
+	// Determine the title ID for the given action type.
+	var titleId string
+
+	// We sprintf in order to set our column, as defined above.
+	query := fmt.Sprintf("SELECT %s FROM title_ids WHERE application_id = $1", column)
+	row := pool.QueryRow(ctx, query, appId)
+	err := row.Scan(&titleId)
+	check(err)
+
+	// Parse to a uint64.
+	res, err := strconv.ParseUint(titleId, 16, 64)
+	check(err)
+
+	return res
 }
 
 // writeToTitlePath writes a file for the given name to the title's path.
@@ -45,13 +70,27 @@ func readZip(uuid string) []byte {
 
 // updateTicket updates the given title ID with ticket contents and a version.
 func updateTicket(titleId uint64, ticket []byte, version int) {
-	titleStr := strconv.FormatUint(titleId, 16)
+	titleStr := fmt.Sprintf("%016x", titleId)
 
 	// Attempt to insert or update, depending on what is available.
 	_, err := pool.Exec(ctx, `INSERT INTO tickets (title_id, ticket, version) VALUES ($1, $2, $3)
 		ON CONFLICT(title_id)
 		DO UPDATE SET ticket = $2, version = $3`, titleStr, ticket, version)
 	check(err)
+}
+
+// updateVersion increments the version for this app ID by 1.
+func updateVersion(appId int) int {
+	var version int
+
+	row := pool.QueryRow(ctx, `UPDATE application
+		SET version = version + 1
+		WHERE id = $1
+		RETURNING version`, appId)
+	err := row.Scan(&version)
+	check(err)
+
+	return version
 }
 
 // createFauxWad loads template files into a usable form for WAD usage.

@@ -7,10 +7,7 @@ import (
 // sdTitle returns a usable SD-oriented title ID for the given application ID.
 func sdTitle(appId int) uint64 {
 	// 00010008-53xxxxxx (Sxxx)
-	base := uint64(0x0001008_53000000)
-	base += appIdChars(appId)
-
-	return base
+	return titleForType("sd", appId)
 }
 
 // generateSD generates a SD title for the given application ID.
