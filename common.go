@@ -114,6 +114,7 @@ func createFauxWad(titleId uint64, version int) *wadlib.WAD {
 	check(err)
 	fauxWad.Ticket.TitleID = titleId
 	fauxWad.Ticket.TitleVersion = uint16(version)
+	fauxWad.Ticket.TicketID = 0
 
 	// Use our new title key.
 	var newKey [16]byte
