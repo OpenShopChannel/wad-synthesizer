@@ -42,7 +42,7 @@ func generateSD(appId int, zipUuid string, version int) {
 	check(err)
 
 	// The TMD on disk expects to have a certificate chain following it.
-	writtenTmd := append(tmd, templateCerts...)
+	writtenTmd := append(tmd, wadlib.CertChainTemplate...)
 	writeForTitle(titleId, "tmd", writtenTmd)
 
 	// After that, obtain our ticket in a byte form.

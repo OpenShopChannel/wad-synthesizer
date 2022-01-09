@@ -31,18 +31,6 @@ var ctx = context.Background()
 // config is a shared, global config loaded at application start.
 var config Config
 
-// templateTMD is our template TMD.
-//go:embed templates/tmd
-var templateTMD []byte
-
-// templateTicket is our template ticket.
-//go:embed templates/tik
-var templateTicket []byte
-
-// templateCerts is our template certificate chain.
-//go:embed templates/certs
-var templateCerts []byte
-
 func main() {
 	if len(os.Args) == 1 || len(os.Args) > 3 {
 		fmt.Printf("Usage: %s <type> [app id]\n", os.Args[0])

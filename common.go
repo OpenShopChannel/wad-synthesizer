@@ -104,13 +104,13 @@ func createFauxWad(titleId uint64, version int) *wadlib.WAD {
 	check(err)
 
 	// Manipulate a TMD for this title.
-	err = fauxWad.LoadTMD(templateTMD)
+	err = fauxWad.LoadTMD(wadlib.TMDTemplate)
 	check(err)
 	fauxWad.TMD.TitleID = titleId
 	fauxWad.TMD.TitleVersion = uint16(version)
 
 	// Manipulate a ticket for this title.
-	err = fauxWad.LoadTicket(templateTicket)
+	err = fauxWad.LoadTicket(wadlib.TicketTemplate)
 	check(err)
 	fauxWad.Ticket.TitleID = titleId
 	fauxWad.Ticket.TitleVersion = uint16(version)
