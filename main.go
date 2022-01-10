@@ -34,7 +34,7 @@ var config Config
 func main() {
 	// Validate argument length
 	if len(os.Args) == 1 || len(os.Args) > 4 {
-		fmt.Printf("Usage: %s <type> [app id]\n", os.Args[0])
+		fmt.Printf("Usage: %s <action> [arguments]\n", os.Args[0])
 		fmt.Println("For more information, consult the README.")
 		os.Exit(1)
 	}
@@ -62,14 +62,26 @@ func main() {
 		handleImport()
 	default:
 		fmt.Println("Invalid action type specified!")
-		fmt.Printf("Usage: %s <type> [app id]\n", os.Args[0])
+		fmt.Printf("Usage: %s <action> [arguments]\n", os.Args[0])
 		fmt.Println("For more information, consult the README.")
 	}
 }
 
 // handleImport handles determining logic for imports.
 func handleImport() {
+	if len(os.Args) == 2 {
+		fmt.Println("No WAD file path specified!")
+		fmt.Printf("Usage: %s import path/to/title.wad\n", os.Args[0])
+		fmt.Println("For more information, consult the README.")
+		os.Exit(1)
+	}
 
+	path := os.Args[2]
+	contents, err := ioutil.ReadFile(path)
+	check(err)
+
+	importWad(contents)
+	fmt.Println("handled import of", path)
 }
 
 // handleGenerate handles determining logic for generation.
@@ -79,7 +91,7 @@ func handleGenerate() {
 	// Determine the current generation type.
 	if len(os.Args) == 2 {
 		fmt.Println("No generation type specified!")
-		fmt.Printf("Usage: %s <type> [app id]\n", os.Args[0])
+		fmt.Printf("Usage: %s generate [app id]\n", os.Args[0])
 		fmt.Println("For more information, consult the README.")
 		os.Exit(1)
 	}
