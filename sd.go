@@ -17,6 +17,7 @@ func sdTitle(appId int) uint64 {
 func generateSD(appId int, zipUuid string, version int) {
 	titleId := sdTitle(appId)
 	fauxWad := createFauxWad(titleId, version)
+	clearTitle(titleId)
 
 	// Read our zip file content.
 	zipContent := readZip(zipUuid)

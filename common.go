@@ -123,3 +123,10 @@ func createFauxWad(titleId uint64, version int) *wadlib.WAD {
 
 	return fauxWad
 }
+
+// clearTitle removes a title's directory prior to writing in order to avoid conflicts.
+func clearTitle(titleId uint64) {
+	dirPath := fmt.Sprintf("%s/%016x", config.TitlePath, titleId)
+	err := os.RemoveAll(dirPath)
+	check(err)
+}
